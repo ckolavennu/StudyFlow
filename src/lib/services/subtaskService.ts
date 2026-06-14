@@ -116,6 +116,24 @@ export async function updateSubtaskCompletion(
 	});
 }
 
+export async function updateSubtaskTitle(
+	userId: string,
+	assignmentId: string,
+	subtaskId: string,
+	title: string
+) {
+	const cleanTitle = title.trim();
+
+	if (!cleanTitle) {
+		throw new Error('Subtask title is required.');
+	}
+
+	await updateDoc(getSubtaskDocument(userId, assignmentId, subtaskId), {
+		title: cleanTitle,
+		updatedAt: serverTimestamp()
+	});
+}
+
 export async function deleteSubtask(userId: string, assignmentId: string, subtaskId: string) {
 	await deleteDoc(getSubtaskDocument(userId, assignmentId, subtaskId));
 }
