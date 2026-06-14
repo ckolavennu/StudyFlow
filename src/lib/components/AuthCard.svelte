@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Eye, EyeOff, LockKeyhole, Mail, Sparkles, UserRound } from 'lucide-svelte';
-	import { loginUser, registerUser } from '$lib/services/authService';
+	import { loginUser, loginWithGoogle, registerUser } from '$lib/services/authService';
 	import { authState } from '$lib/stores/auth';
 
 	let isRegistering = $state(false);
@@ -10,6 +10,7 @@
 	let confirmPassword = $state('');
 	let showPassword = $state(false);
 	let loading = $state(false);
+	let googleLoading = $state(false);
 	let errorMessage = $state('');
 
 	function getFriendlyError(error: unknown) {
@@ -36,6 +37,18 @@
 			code === 'auth/wrong-password'
 		) {
 			return 'Incorrect email or password.';
+		}
+
+		if (code === 'auth/popup-closed-by-user') {
+			return 'Google sign-in was closed before it finished.';
+		}
+
+		if (code === 'auth/popup-blocked') {
+			return 'Your browser blocked the Google sign-in popup. Please allow popups and try again.';
+		}
+
+		if (code === 'auth/account-exists-with-different-credential') {
+			return 'An account already exists with this email using a different sign-in method.';
 		}
 
 		if (code === 'auth/network-request-failed') {
@@ -96,6 +109,24 @@
 			loading = false;
 		}
 	}
+
+	async function handleGoogleLogin() {
+		errorMessage = '';
+
+		try {
+			googleLoading = true;
+			const user = await loginWithGoogle();
+
+			authState.set({
+				user,
+				loading: false
+			});
+		} catch (error) {
+			errorMessage = getFriendlyError(error);
+		} finally {
+			googleLoading = false;
+		}
+	}
 </script>
 
 <section class="glass-card relative w-full max-w-md overflow-hidden rounded-3xl p-8">
@@ -103,9 +134,7 @@
 	<div class="absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-purple-500/20 blur-3xl"></div>
 
 	<div class="relative">
-		<div
-			class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-xl"
-		>
+		<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-xl">
 			<Sparkles class="h-7 w-7 text-cyan-200" />
 		</div>
 
@@ -123,14 +152,30 @@
 			</p>
 		</div>
 
-		<form class="mt-8 space-y-4" onsubmit={handleSubmit}>
+		<div class="mt-8 space-y-4">
+			<button
+				type="button"
+				disabled={googleLoading || loading}
+				class="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/95 px-5 py-3 font-bold text-slate-900 shadow-lg transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+				onclick={handleGoogleLogin}
+			>
+				<span class="flex h-6 w-6 items-center justify-center rounded-full bg-white text-lg font-black text-blue-600">G</span>
+				{googleLoading ? 'Connecting...' : 'Continue with Google'}
+			</button>
+
+			<div class="flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-white/35">
+				<div class="h-px flex-1 bg-white/10"></div>
+				<span>or</span>
+				<div class="h-px flex-1 bg-white/10"></div>
+			</div>
+		</div>
+
+		<form class="mt-4 space-y-4" onsubmit={handleSubmit}>
 			{#if isRegistering}
 				<label class="block">
 					<span class="mb-2 block text-sm font-medium text-white/75">Name</span>
 
-					<div
-						class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 focus-within:border-cyan-300/60"
-					>
+					<div class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 focus-within:border-cyan-300/60">
 						<UserRound class="h-5 w-5 text-white/50" />
 
 						<input
@@ -147,9 +192,7 @@
 			<label class="block">
 				<span class="mb-2 block text-sm font-medium text-white/75">Email</span>
 
-				<div
-					class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 focus-within:border-cyan-300/60"
-				>
+				<div class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 focus-within:border-cyan-300/60">
 					<Mail class="h-5 w-5 text-white/50" />
 
 					<input
@@ -165,9 +208,7 @@
 			<label class="block">
 				<span class="mb-2 block text-sm font-medium text-white/75">Password</span>
 
-				<div
-					class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 focus-within:border-cyan-300/60"
-				>
+				<div class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 focus-within:border-cyan-300/60">
 					<LockKeyhole class="h-5 w-5 text-white/50" />
 
 					<input
@@ -197,9 +238,7 @@
 				<label class="block">
 					<span class="mb-2 block text-sm font-medium text-white/75">Confirm Password</span>
 
-					<div
-						class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 focus-within:border-cyan-300/60"
-					>
+					<div class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 focus-within:border-cyan-300/60">
 						<LockKeyhole class="h-5 w-5 text-white/50" />
 
 						<input
@@ -221,7 +260,7 @@
 
 			<button
 				type="submit"
-				disabled={loading}
+				disabled={loading || googleLoading}
 				class="w-full rounded-2xl bg-gradient-to-r from-cyan-300 to-purple-400 px-5 py-3 font-bold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:scale-[1.01] hover:shadow-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				{#if loading}
