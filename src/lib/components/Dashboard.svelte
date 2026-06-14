@@ -9,6 +9,8 @@
 	import AssignmentCard from '$lib/components/AssignmentCard.svelte';
 	import CountdownModal from '$lib/components/CountdownModal.svelte';
 	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
+	import SuperAdminPanel from '$lib/components/SuperAdminPanel.svelte';
+	import { isSuperAdmin } from '$lib/utils/adminUtils';
 	import {
 		getAssignmentStatus,
 		getVisibleAssignments,
@@ -24,6 +26,7 @@
 	let activeFilter = $state<AssignmentFilter>('all');
 	let sortMode = $state<AssignmentSort>('deadline-asc');
 
+	let ownerAccessEnabled = $derived(isSuperAdmin($authState.user?.uid));
 	let completedCount = $derived(assignments.filter((assignment) => assignment.completed).length);
 	let activeCount = $derived(assignments.length - completedCount);
 	let overdueCount = $derived(
@@ -121,6 +124,10 @@
 			</button>
 		</div>
 	</header>
+
+	{#if ownerAccessEnabled}
+		<SuperAdminPanel />
+	{/if}
 
 	<div class="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.4fr]">
 		{#if $authState.user}
