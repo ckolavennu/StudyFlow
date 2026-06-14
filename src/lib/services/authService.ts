@@ -1,11 +1,18 @@
 import {
+	GoogleAuthProvider,
 	createUserWithEmailAndPassword,
 	signInWithEmailAndPassword,
+	signInWithPopup,
 	signOut,
 	updateProfile
 } from 'firebase/auth';
 import { auth } from '$lib/firebase';
 import { upsertUserProfile } from '$lib/services/userProfileService';
+
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+	prompt: 'select_account'
+});
 
 async function safelySyncUserProfile() {
 	const currentUser = auth.currentUser;
@@ -41,6 +48,12 @@ export async function registerUser(name: string, email: string, password: string
 
 export async function loginUser(email: string, password: string) {
 	const userCredential = await signInWithEmailAndPassword(auth, email, password);
+	await safelySyncUserProfile();
+	return userCredential.user;
+}
+
+export async function loginWithGoogle() {
+	const userCredential = await signInWithPopup(auth, googleProvider);
 	await safelySyncUserProfile();
 	return userCredential.user;
 }
