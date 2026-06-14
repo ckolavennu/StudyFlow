@@ -2,7 +2,7 @@
 
 StudyFlow is a modern, multi-user assignment tracker built with **SvelteKit**, **TypeScript**, **Tailwind CSS**, **Firebase Authentication**, **Cloud Firestore**, and **Vercel**.
 
-It helps students manage assignments with private accounts, live deadline countdowns, subtasks, checklist progress, filters, sorting, and urgency-based task styling.
+It helps students manage assignments with private accounts, live deadline countdowns, subtasks, checklist progress, filters, sorting, urgency-based task styling, and an in-app notification center.
 
 ## Live App
 
@@ -27,8 +27,29 @@ https://your-studyflow-link.vercel.app
 - Filters for All, Active, Completed, Overdue, and Due Soon
 - Sorting by nearest deadline, newest first, oldest first, and completed last
 - Urgency styling for overdue, due today, due soon, and completed tasks
+- In-app notification center for overdue and upcoming deadlines
 - Custom glassmorphism confirmation dialog
 - Dark gradient interface with frosted-glass cards
+
+## Notification System
+
+StudyFlow currently includes an in-app notification center. It automatically highlights:
+
+```txt
+Overdue assignments
+Assignments due today
+Assignments due within the next few days
+```
+
+The notification bell appears in the dashboard header. Clicking a notification opens the relevant assignment countdown modal.
+
+Future notification upgrades can include:
+
+```txt
+Email reminders using Resend
+Scheduled checks using Vercel Cron
+Browser push notifications using Firebase Cloud Messaging or OneSignal
+```
 
 ## Tech Stack
 
@@ -151,6 +172,7 @@ Issue 7: Filters and sorting
 Issue 8: Urgency styling
 Issue 9: Custom confirmation dialog and improved empty states
 Issue 10: Portfolio polish and README update
+Issue 11: In-app notification center
 ```
 
 ## Author
