@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { CheckCircle2, Circle, ListChecks, Plus, Trash2 } from 'lucide-svelte';
+	import { Check, CheckCircle2, Circle, Edit3, ListChecks, Plus, Trash2, X } from 'lucide-svelte';
 	import {
 		createSubtask,
 		deleteSubtask,
 		listenToSubtasks,
-		updateSubtaskCompletion
+		updateSubtaskCompletion,
+		updateSubtaskTitle
 	} from '$lib/services/subtaskService';
 	import type { Subtask } from '$lib/types/subtask';
 
@@ -20,6 +21,10 @@
 	let loading = $state(true);
 	let saving = $state(false);
 	let errorMessage = $state('');
+
+	let editingSubtaskId = $state<string | null>(null);
+	let editingTitle = $state('');
+	let editingLoading = $state(false);
 
 	let completedCount = $derived(subtasks.filter((subtask) => subtask.completed).length);
 	let totalCount = $derived(subtasks.length);
@@ -58,7 +63,6 @@
 
 	async function handleAddSubtask(event: SubmitEvent) {
 		event.preventDefault();
-
 		errorMessage = '';
 
 		if (!title.trim()) {
@@ -68,11 +72,7 @@
 
 		try {
 			saving = true;
-
-			await createSubtask(userId, assignmentId, {
-				title
-			});
-
+			await createSubtask(userId, assignmentId, { title });
 			title = '';
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Failed to add subtask.';
@@ -87,6 +87,36 @@
 
 	async function handleDelete(subtask: Subtask) {
 		await deleteSubtask(userId, assignmentId, subtask.id);
+	}
+
+	function startEditing(subtask: Subtask) {
+		editingSubtaskId = subtask.id;
+		editingTitle = subtask.title;
+		errorMessage = '';
+	}
+
+	function cancelEditing() {
+		editingSubtaskId = null;
+		editingTitle = '';
+	}
+
+	async function saveEditing(subtask: Subtask) {
+		errorMessage = '';
+
+		if (!editingTitle.trim()) {
+			errorMessage = 'Subtask title cannot be empty.';
+			return;
+		}
+
+		try {
+			editingLoading = true;
+			await updateSubtaskTitle(userId, assignmentId, subtask.id, editingTitle);
+			cancelEditing();
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : 'Failed to update subtask.';
+		} finally {
+			editingLoading = false;
+		}
 	}
 </script>
 
@@ -156,37 +186,79 @@
 			</div>
 		{:else}
 			{#each subtasks as subtask (subtask.id)}
-				<div
-					class="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-				>
-					<button
-						type="button"
-						class="flex min-w-0 flex-1 items-center gap-3 text-left"
-						onclick={() => handleToggle(subtask)}
-					>
-						{#if subtask.completed}
-							<CheckCircle2 class="h-5 w-5 shrink-0 text-emerald-200" />
-						{:else}
-							<Circle class="h-5 w-5 shrink-0 text-white/55" />
-						{/if}
+				<div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+					{#if editingSubtaskId === subtask.id}
+						<div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+							<input
+								class="min-h-11 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 text-white outline-none focus:border-cyan-300/60"
+								type="text"
+								bind:value={editingTitle}
+							/>
 
-						<span
-							class={subtask.completed
-								? 'truncate text-sm text-white/40 line-through'
-								: 'truncate text-sm text-white/80'}
-						>
-							{subtask.title}
-						</span>
-					</button>
+							<div class="flex gap-2">
+								<button
+									type="button"
+									disabled={editingLoading}
+									class="rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-2 text-emerald-100 transition hover:bg-emerald-500/20 disabled:opacity-50"
+									aria-label="Save subtask"
+									onclick={() => saveEditing(subtask)}
+								>
+									<Check class="h-4 w-4" />
+								</button>
 
-					<button
-						type="button"
-						class="rounded-xl border border-red-300/20 bg-red-500/10 p-2 text-red-100 transition hover:bg-red-500/20"
-						aria-label="Delete subtask"
-						onclick={() => handleDelete(subtask)}
-					>
-						<Trash2 class="h-4 w-4" />
-					</button>
+								<button
+									type="button"
+									class="rounded-xl border border-white/15 bg-white/10 p-2 text-white/70 transition hover:bg-white/15"
+									aria-label="Cancel edit"
+									onclick={cancelEditing}
+								>
+									<X class="h-4 w-4" />
+								</button>
+							</div>
+						</div>
+					{:else}
+						<div class="flex items-center justify-between gap-3">
+							<button
+								type="button"
+								class="flex min-w-0 flex-1 items-center gap-3 text-left"
+								onclick={() => handleToggle(subtask)}
+							>
+								{#if subtask.completed}
+									<CheckCircle2 class="h-5 w-5 shrink-0 text-emerald-200" />
+								{:else}
+									<Circle class="h-5 w-5 shrink-0 text-white/55" />
+								{/if}
+
+								<span
+									class={subtask.completed
+										? 'truncate text-sm text-white/40 line-through'
+										: 'truncate text-sm text-white/80'}
+								>
+									{subtask.title}
+								</span>
+							</button>
+
+							<div class="flex gap-2">
+								<button
+									type="button"
+									class="rounded-xl border border-white/15 bg-white/10 p-2 text-white/70 transition hover:bg-white/15"
+									aria-label="Edit subtask"
+									onclick={() => startEditing(subtask)}
+								>
+									<Edit3 class="h-4 w-4" />
+								</button>
+
+								<button
+									type="button"
+									class="rounded-xl border border-red-300/20 bg-red-500/10 p-2 text-red-100 transition hover:bg-red-500/20"
+									aria-label="Delete subtask"
+									onclick={() => handleDelete(subtask)}
+								>
+									<Trash2 class="h-4 w-4" />
+								</button>
+							</div>
+						</div>
+					{/if}
 				</div>
 			{/each}
 		{/if}
