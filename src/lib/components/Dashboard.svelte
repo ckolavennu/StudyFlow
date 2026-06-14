@@ -7,6 +7,7 @@
 	import AssignmentForm from '$lib/components/AssignmentForm.svelte';
 	import AssignmentCard from '$lib/components/AssignmentCard.svelte';
 	import CountdownModal from '$lib/components/CountdownModal.svelte';
+	import NotificationCenter from '$lib/components/NotificationCenter.svelte';
 	import {
 		getAssignmentStatus,
 		getVisibleAssignments,
@@ -101,10 +102,19 @@
 			<p class="mt-2 text-sm text-white/65">Track your assignments, deadlines, and progress in one protected workspace.</p>
 		</div>
 
-		<button type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60" onclick={handleLogout} disabled={logoutLoading}>
-			<LogOut class="h-5 w-5" />
-			{logoutLoading ? 'Logging out...' : 'Logout'}
-		</button>
+		<div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+			<NotificationCenter
+				{assignments}
+				onSelectAssignment={(assignment) => {
+					selectedAssignment = assignment;
+				}}
+			/>
+
+			<button type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60" onclick={handleLogout} disabled={logoutLoading}>
+				<LogOut class="h-5 w-5" />
+				{logoutLoading ? 'Logging out...' : 'Logout'}
+			</button>
+		</div>
 	</header>
 
 	<div class="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.4fr]">
