@@ -58,6 +58,25 @@ export async function loginWithGoogle() {
 	return userCredential.user;
 }
 
+export async function updateCurrentUserName(name: string) {
+	const displayName = name.trim();
+	const currentUser = auth.currentUser;
+
+	if (!currentUser) {
+		throw new Error('You must be logged in to update your name.');
+	}
+
+	if (!displayName) {
+		throw new Error('Name cannot be empty.');
+	}
+
+	await updateProfile(currentUser, { displayName });
+	await currentUser.reload();
+	await safelySyncUserProfile();
+
+	return auth.currentUser ?? currentUser;
+}
+
 export async function logoutUser() {
 	await signOut(auth);
 }
