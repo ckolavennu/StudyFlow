@@ -6,6 +6,7 @@
 	import type { Assignment } from '$lib/types/assignment';
 	import AssignmentForm from '$lib/components/AssignmentForm.svelte';
 	import AssignmentCard from '$lib/components/AssignmentCard.svelte';
+	import CountdownModal from '$lib/components/CountdownModal.svelte';
 
 	let logoutLoading = $state(false);
 	let assignments = $state<Assignment[]>([]);
@@ -155,21 +156,11 @@
 	</div>
 
 	{#if selectedAssignment}
-		<div class="mt-6 rounded-3xl border border-cyan-300/20 bg-cyan-400/10 p-5 text-cyan-50">
-			<p class="font-semibold">Selected assignment: {selectedAssignment.title}</p>
-			<p class="mt-1 text-sm text-cyan-50/70">
-				The full countdown detail modal will be built in the next issue.
-			</p>
-
-			<button
-				type="button"
-				class="mt-4 rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15"
-				onclick={() => {
-					selectedAssignment = null;
-				}}
-			>
-				Close preview
-			</button>
-		</div>
+		<CountdownModal
+			assignment={selectedAssignment}
+			onClose={() => {
+				selectedAssignment = null;
+			}}
+		/>
 	{/if}
 </section>
