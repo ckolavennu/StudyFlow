@@ -2,6 +2,8 @@ import { doc, getDoc, serverTimestamp, setDoc, type Timestamp } from 'firebase/f
 import type { User } from 'firebase/auth';
 import { appId, db } from '$lib/firebase';
 import type { UserProfile } from '$lib/types/userProfile';
+import type { Assignment } from '$lib/types/assignment';
+import { getAssignmentStatus } from '$lib/utils/assignmentUtils';
 
 function getUserProfileDocument(userId: string) {
 	return doc(db, 'artifacts', appId, 'userProfiles', userId);
@@ -45,6 +47,30 @@ export async function upsertUserProfile(user: User) {
 			completedCount: 0,
 			activeCount: 0,
 			overdueCount: 0
+		},
+		{ merge: true }
+	);
+}
+
+export async function updateUserProfileAssignmentStats(userId: string, assignments: Assignment[]) {
+	if (!userId) {
+		return;
+	}
+
+	const completedCount = assignments.filter((assignment) => assignment.completed).length;
+	const activeCount = assignments.length - completedCount;
+	const overdueCount = assignments.filter(
+		(assignment) => getAssignmentStatus(assignment) === 'overdue'
+	).length;
+
+	await setDoc(
+		getUserProfileDocument(userId),
+		{
+			assignmentCount: assignments.length,
+			completedCount,
+			activeCount,
+			overdueCount,
+			updatedAt: serverTimestamp()
 		},
 		{ merge: true }
 	);
