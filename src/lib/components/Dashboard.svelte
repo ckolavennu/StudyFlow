@@ -3,6 +3,7 @@
 	import { authState } from '$lib/stores/auth';
 	import { logoutUser } from '$lib/services/authService';
 	import { listenToAssignments } from '$lib/services/assignmentService';
+	import { updateUserProfileAssignmentStats } from '$lib/services/userProfileService';
 	import type { Assignment } from '$lib/types/assignment';
 	import AssignmentForm from '$lib/components/AssignmentForm.svelte';
 	import AssignmentCard from '$lib/components/AssignmentCard.svelte';
@@ -62,6 +63,10 @@
 			user.uid,
 			(items) => {
 				assignments = items;
+
+				void updateUserProfileAssignmentStats(user.uid, items).catch((error) => {
+					console.warn('StudyFlow assignment stats sync failed.', error);
+				});
 
 				if (selectedAssignment) {
 					const updatedSelectedAssignment = items.find((item) => item.id === selectedAssignment?.id);
