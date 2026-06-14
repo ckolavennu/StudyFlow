@@ -22,6 +22,7 @@
 
 		if (!user) {
 			assignments = [];
+			selectedAssignment = null;
 			listLoading = false;
 			return;
 		}
@@ -33,6 +34,12 @@
 			user.uid,
 			(items) => {
 				assignments = items;
+
+				if (selectedAssignment) {
+					const updatedSelectedAssignment = items.find((item) => item.id === selectedAssignment?.id);
+					selectedAssignment = updatedSelectedAssignment ?? null;
+				}
+
 				listLoading = false;
 			},
 			(error) => {
@@ -154,14 +161,14 @@
 			</div>
 		</section>
 	</div>
-	
-		{#if selectedAssignment && $authState.user}
-			<CountdownModal
-				assignment={selectedAssignment}
-				userId={$authState.user.uid}
-				onClose={() => {
-					selectedAssignment = null;
-				}}
-			/>
-		{/if}
+
+	{#if selectedAssignment && $authState.user}
+		<CountdownModal
+			assignment={selectedAssignment}
+			userId={$authState.user.uid}
+			onClose={() => {
+				selectedAssignment = null;
+			}}
+		/>
+	{/if}
 </section>
