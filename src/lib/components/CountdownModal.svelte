@@ -2,13 +2,15 @@
 	import { CalendarClock, Clock3, Sparkles, X } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import type { Assignment } from '$lib/types/assignment';
+	import SubtaskChecklist from '$lib/components/SubtaskChecklist.svelte';
 
 	type Props = {
 		assignment: Assignment;
+		userId: string;
 		onClose: () => void;
 	};
 
-	let { assignment, onClose }: Props = $props();
+	let { assignment, userId, onClose }: Props = $props();
 
 	let now = $state(Date.now());
 
@@ -180,6 +182,8 @@
 					<p class="mt-2 text-4xl font-black">{daysRemaining}</p>
 				</div>
 			</div>
+
+            <SubtaskChecklist userId={userId} assignmentId={assignment.id} />
 
 			<footer class="mt-6 rounded-3xl border border-white/15 bg-white/10 p-5">
 				<div class="flex items-center gap-3 text-white/75">

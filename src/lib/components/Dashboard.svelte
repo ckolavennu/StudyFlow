@@ -154,13 +154,14 @@
 			</div>
 		</section>
 	</div>
-
-	{#if selectedAssignment}
-		<CountdownModal
-			assignment={selectedAssignment}
-			onClose={() => {
-				selectedAssignment = null;
-			}}
-		/>
-	{/if}
+	
+		{#if selectedAssignment && $authState.user}
+			<CountdownModal
+				assignment={selectedAssignment}
+				userId={$authState.user.uid}
+				onClose={() => {
+					selectedAssignment = null;
+				}}
+			/>
+		{/if}
 </section>
