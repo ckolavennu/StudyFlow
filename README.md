@@ -28,6 +28,7 @@ https://your-studyflow-link.vercel.app
 - Sorting by nearest deadline, newest first, oldest first, and completed last
 - Urgency styling for overdue, due today, due soon, and completed tasks
 - In-app notification center for overdue and upcoming deadlines
+- User profile records for future superadmin analytics
 - Custom glassmorphism confirmation dialog
 - Dark gradient interface with frosted-glass cards
 
@@ -51,6 +52,32 @@ Scheduled checks using Vercel Cron
 Browser push notifications using Firebase Cloud Messaging or OneSignal
 ```
 
+## Superadmin Preparation
+
+StudyFlow creates a safe user profile document when a user registers, logs in, or restores an existing session.
+
+Profile path:
+
+```txt
+/artifacts/{appId}/userProfiles/{userId}
+```
+
+Profile fields:
+
+```txt
+uid
+name
+email
+createdAt
+lastLoginAt
+assignmentCount
+completedCount
+activeCount
+overdueCount
+```
+
+These profile records will be used by the future superadmin dashboard.
+
 ## Tech Stack
 
 ```txt
@@ -65,7 +92,7 @@ Vercel
 
 ## Firestore Data Structure
 
-StudyFlow stores each user's data separately:
+StudyFlow stores each user's assignment data separately:
 
 ```txt
 /artifacts/{appId}/users/{userId}/assignments/{assignmentId}
@@ -77,7 +104,11 @@ Subtasks are stored under each assignment:
 /artifacts/{appId}/users/{userId}/assignments/{assignmentId}/subtasks/{subtaskId}
 ```
 
-This means each logged-in user only reads and writes their own assignments and subtasks.
+User profile records are stored separately for future admin analytics:
+
+```txt
+/artifacts/{appId}/userProfiles/{userId}
+```
 
 ## Firestore Security Rules
 
@@ -94,6 +125,12 @@ service cloud.firestore {
       match /subtasks/{subtaskId} {
         allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
       }
+    }
+
+    match /artifacts/{appId}/userProfiles/{profileUserId} {
+      allow read: if request.auth != null && request.auth.uid == profileUserId;
+      allow create, update: if request.auth != null && request.auth.uid == profileUserId;
+      allow delete: if false;
     }
   }
 }
@@ -173,6 +210,7 @@ Issue 8: Urgency styling
 Issue 9: Custom confirmation dialog and improved empty states
 Issue 10: Portfolio polish and README update
 Issue 11: In-app notification center
+Issue 12: User profile records for superadmin preparation
 ```
 
 ## Author
