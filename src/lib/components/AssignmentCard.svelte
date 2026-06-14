@@ -5,6 +5,12 @@
 		updateAssignmentCompletion
 	} from '$lib/services/assignmentService';
 	import type { Assignment } from '$lib/types/assignment';
+	import {
+		getAssignmentBadgeClasses,
+		getAssignmentCardClasses,
+		getAssignmentStatus,
+		getAssignmentStatusLabel
+	} from '$lib/utils/assignmentUtils';
 
 	type Props = {
 		assignment: Assignment;
@@ -17,36 +23,16 @@
 	let updating = $state(false);
 	let deleting = $state(false);
 
+	let status = $derived(getAssignmentStatus(assignment));
+	let cardClasses = $derived(getAssignmentCardClasses(assignment));
+	let badgeClasses = $derived(getAssignmentBadgeClasses(assignment));
+	let statusLabel = $derived(getAssignmentStatusLabel(assignment));
+
 	function formatDeadline(deadlineMs: number) {
 		return new Intl.DateTimeFormat(undefined, {
 			dateStyle: 'medium',
 			timeStyle: 'short'
 		}).format(new Date(deadlineMs));
-	}
-
-	function getDeadlineLabel(deadlineMs: number) {
-		const diffMs = deadlineMs - Date.now();
-		const dayMs = 1000 * 60 * 60 * 24;
-
-		if (assignment.completed) {
-			return 'Completed';
-		}
-
-		if (diffMs < 0) {
-			return 'Overdue';
-		}
-
-		const days = Math.ceil(diffMs / dayMs);
-
-		if (days === 0) {
-			return 'Due today';
-		}
-
-		if (days === 1) {
-			return '1 day left';
-		}
-
-		return `${days} days left`;
 	}
 
 	async function handleToggle(event: MouseEvent) {
@@ -81,7 +67,7 @@
 <article
 	role="button"
 	tabindex="0"
-	class="glass-card group cursor-pointer rounded-3xl p-5 transition hover:-translate-y-1 hover:bg-white/15"
+	class={cardClasses}
 	onclick={() => onSelect?.(assignment)}
 	onkeydown={(event) => {
 		if (event.key === 'Enter' || event.key === ' ') {
@@ -101,13 +87,17 @@
 					{assignment.title}
 				</h3>
 
-				<span
-					class={assignment.completed
-						? 'rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100'
-						: 'rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-100'}
-				>
-					{getDeadlineLabel(assignment.deadlineMs)}
-				</span>
+				<span class={badgeClasses}>{statusLabel}</span>
+
+				{#if status === 'overdue'}
+					<span class="rounded-full border border-red-300/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-100">
+						Needs attention
+					</span>
+				{:else if status === 'due-today'}
+					<span class="rounded-full border border-pink-300/30 bg-pink-500/10 px-3 py-1 text-xs font-semibold text-pink-100">
+						Final day
+					</span>
+				{/if}
 			</div>
 
 			<div class="mt-3 flex items-center gap-2 text-sm text-white/60">
