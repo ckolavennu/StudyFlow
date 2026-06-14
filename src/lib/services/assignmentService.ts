@@ -97,6 +97,39 @@ export async function updateAssignmentCompletion(
 	});
 }
 
+export async function updateAssignmentDetails(
+	userId: string,
+	assignmentId: string,
+	input: AssignmentInput
+) {
+	const title = input.title.trim();
+	const description = input.description.trim();
+	const deadlineDate = new Date(input.deadline);
+
+	if (!userId) {
+		throw new Error('Missing user ID.');
+	}
+
+	if (!assignmentId) {
+		throw new Error('Missing assignment ID.');
+	}
+
+	if (!title) {
+		throw new Error('Assignment title is required.');
+	}
+
+	if (Number.isNaN(deadlineDate.getTime())) {
+		throw new Error('Please select a valid deadline.');
+	}
+
+	await updateDoc(getAssignmentDocument(userId, assignmentId), {
+		title,
+		description,
+		deadline: Timestamp.fromDate(deadlineDate),
+		updatedAt: serverTimestamp()
+	});
+}
+
 export async function deleteAssignment(userId: string, assignmentId: string) {
 	await deleteDoc(getAssignmentDocument(userId, assignmentId));
 }
