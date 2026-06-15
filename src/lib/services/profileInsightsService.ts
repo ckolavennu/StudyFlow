@@ -23,7 +23,14 @@ export function listenToProfiles(
 	return onSnapshot(
 		profilesQuery,
 		(snapshot) => {
-			const profiles = snapshot.docs.map((document) => mapUserProfile(document.id, document.data()));
+			const profiles = snapshot.docs.map((document) => {
+				const data = document.data();
+				return {
+					...mapUserProfile(document.id, data),
+					disabled: Boolean(data.disabled)
+				};
+			});
+
 			onProfiles(profiles);
 		},
 		(error) => {
