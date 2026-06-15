@@ -2,13 +2,14 @@ import { json } from '@sveltejs/kit';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { RequestHandler } from './$types';
 import { getAdminAuth, getAdminDb, getStudyFlowAppId, requireOwner } from '$lib/server/firebaseAdmin';
+import { writeOwnerAuditLog } from '$lib/server/ownerAuditLogger';
 
 function cleanString(value: unknown) {
 	return typeof value === 'string' ? value.trim() : '';
 }
 
 export const POST: RequestHandler = async ({ request }) => {
-	await requireOwner(request);
+	const owner = await requireOwner(request);
 
 	const body = await request.json().catch(() => ({}));
 	const name = cleanString(body.name);
@@ -43,6 +44,8 @@ export const POST: RequestHandler = async ({ request }) => {
 					uid: userRecord.uid,
 					name,
 					email,
+					role: 'user',
+					disabled: false,
 					createdAt: FieldValue.serverTimestamp(),
 					lastLoginAt: FieldValue.serverTimestamp(),
 					updatedAt: FieldValue.serverTimestamp(),
@@ -53,6 +56,15 @@ export const POST: RequestHandler = async ({ request }) => {
 				},
 				{ merge: true }
 			);
+
+		await writeOwnerAuditLog({
+			action: 'account_created',
+			actor: owner,
+			targetUid: userRecord.uid,
+			targetEmail: email,
+			targetName: name,
+			message: `Created account for ${name}.`
+		});
 
 		return json({
 			uid: userRecord.uid,
