@@ -10,6 +10,7 @@
 		TrendingUp,
 		UsersRound
 	} from 'lucide-svelte';
+	import OwnerAccountManager from '$lib/components/OwnerAccountManager.svelte';
 	import type { UserProfile } from '$lib/types/userProfile';
 	import { listenToProfiles } from '$lib/services/profileInsightsService';
 
@@ -154,6 +155,8 @@
 			<div class="rounded-3xl border border-red-300/20 bg-red-500/10 p-5"><div class="flex items-center gap-3"><AlertTriangle class="h-5 w-5 text-red-200" /><p class="text-sm uppercase tracking-[0.2em] text-red-100">Highest overdue</p></div><p class="mt-4 text-xl font-black">{highestRiskUser?.name ?? 'No users yet'}</p><p class="mt-1 text-sm text-red-50/60">{highestRiskUser?.overdueCount ?? 0} overdue assignments</p></div>
 			<div class="rounded-3xl border border-white/15 bg-white/10 p-5"><div class="flex items-center gap-3"><Activity class="h-5 w-5 text-purple-200" /><p class="text-sm uppercase tracking-[0.2em] text-purple-200">Recent activity</p></div><p class="mt-4 text-xl font-black">{profiles[0]?.name ?? 'No activity yet'}</p><p class="mt-1 text-sm text-white/50">{profiles[0] ? `${formatRelativeDate(profiles[0].lastLoginAtMs)} login` : 'No recent login'}</p></div>
 		</div>
+
+		<OwnerAccountManager profiles={userProfiles} />
 
 		<div class="mt-6 overflow-hidden rounded-3xl border border-white/15 bg-white/10">
 			<div class="border-b border-white/10 px-5 py-5">
