@@ -11,6 +11,7 @@
 		UsersRound
 	} from 'lucide-svelte';
 	import OwnerAccountManager from '$lib/components/OwnerAccountManager.svelte';
+	import OwnerAuditLogPanel from '$lib/components/OwnerAuditLogPanel.svelte';
 	import type { UserProfile } from '$lib/types/userProfile';
 	import { listenToProfiles } from '$lib/services/profileInsightsService';
 
@@ -157,6 +158,7 @@
 		</div>
 
 		<OwnerAccountManager profiles={userProfiles} />
+		<OwnerAuditLogPanel />
 
 		<div class="mt-6 overflow-hidden rounded-3xl border border-white/15 bg-white/10">
 			<div class="border-b border-white/10 px-5 py-5">
