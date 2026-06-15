@@ -1,18 +1,45 @@
 import {
+	addDoc,
 	collection,
 	limit,
 	onSnapshot,
 	orderBy,
 	query,
+	serverTimestamp,
 	type FirestoreError,
 	type Timestamp,
 	type Unsubscribe
 } from 'firebase/firestore';
-import { appId, db } from '$lib/firebase';
+import { appId, auth, db } from '$lib/firebase';
 import type { OwnerAuditAction, OwnerAuditLog } from '$lib/types/ownerAuditLog';
 
 function getAuditCollection() {
 	return collection(db, 'artifacts', appId, 'ownerAuditLogs');
+}
+
+export async function addOwnerAuditLog(input: {
+	action: OwnerAuditAction;
+	targetUid: string;
+	targetEmail: string;
+	targetName: string;
+	message: string;
+}) {
+	const currentUser = auth.currentUser;
+
+	if (!currentUser) {
+		return;
+	}
+
+	await addDoc(getAuditCollection(), {
+		action: input.action,
+		actorUid: currentUser.uid,
+		actorEmail: currentUser.email ?? '',
+		targetUid: input.targetUid,
+		targetEmail: input.targetEmail,
+		targetName: input.targetName,
+		message: input.message,
+		createdAt: serverTimestamp()
+	});
 }
 
 export function listenToOwnerAuditLogs(
