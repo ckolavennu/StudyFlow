@@ -38,6 +38,7 @@
 		if (action === 'account_password_updated') return 'Credential updated';
 		if (action === 'account_suspended') return 'Access suspended';
 		if (action === 'account_restored') return 'Access restored';
+		if (action === 'account_removed') return 'Account removed';
 		return 'Owner action';
 	}
 
@@ -46,6 +47,7 @@
 		if (action === 'account_password_updated') return 'border-purple-300/25 bg-purple-500/10 text-purple-100';
 		if (action === 'account_suspended') return 'border-red-300/25 bg-red-500/10 text-red-100';
 		if (action === 'account_restored') return 'border-emerald-300/25 bg-emerald-500/10 text-emerald-100';
+		if (action === 'account_removed') return 'border-orange-300/25 bg-orange-500/10 text-orange-100';
 		return 'border-white/15 bg-white/10 text-white/70';
 	}
 </script>
