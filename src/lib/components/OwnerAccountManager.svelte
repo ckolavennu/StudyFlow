@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, KeyRound, Plus, RefreshCw, UserRoundX } from 'lucide-svelte';
+	import { Check, KeyRound, Plus, Trash2, UserRoundX } from 'lucide-svelte';
 	import { authState } from '$lib/stores/auth';
 	import type { UserProfile } from '$lib/types/userProfile';
 	import {
@@ -8,6 +8,7 @@
 		restoreAccount,
 		suspendAccount
 	} from '$lib/services/ownerAccountService';
+	import { removeStudyFlowAccount } from '$lib/services/ownerRemovalService';
 
 	type Props = {
 		profiles: UserProfile[];
@@ -26,11 +27,15 @@
 	let newPassword = $state('');
 	let creating = $state(false);
 	let updatingUid = $state<string | null>(null);
+	let removingUid = $state<string | null>(null);
+	let confirmUid = $state('');
+	let confirmText = $state('');
 	let successMessage = $state('');
 	let errorMessage = $state('');
 
 	let selectedProfile = $derived(profiles.find((profile) => profile.uid === selectedUid) ?? null);
 	let userProfiles = $derived(profiles.filter((profile) => profile.role !== 'super-admin'));
+	let confirmProfile = $derived(userProfiles.find((profile) => profile.uid === confirmUid) ?? null);
 
 	function isCurrentUser(profile: UserProfile) {
 		return profile.uid === $authState.user?.uid;
@@ -43,6 +48,17 @@
 	function clearMessages() {
 		successMessage = '';
 		errorMessage = '';
+	}
+
+	function startRemoveConfirmation(profile: UserProfile) {
+		clearMessages();
+		confirmUid = profile.uid;
+		confirmText = '';
+	}
+
+	function cancelRemoveConfirmation() {
+		confirmUid = '';
+		confirmText = '';
 	}
 
 	async function handleCreateAccount(event: SubmitEvent) {
@@ -118,6 +134,31 @@
 			updatingUid = null;
 		}
 	}
+
+	async function handleRemoveAccount() {
+		clearMessages();
+
+		if (!confirmProfile) {
+			errorMessage = 'Select a user to remove first.';
+			return;
+		}
+
+		if (confirmText.trim().toLowerCase() !== confirmProfile.email.toLowerCase()) {
+			errorMessage = 'Type the user email exactly to confirm removal.';
+			return;
+		}
+
+		try {
+			removingUid = confirmProfile.uid;
+			await removeStudyFlowAccount(confirmProfile.uid);
+			successMessage = `${confirmProfile.name} was removed from StudyFlow.`;
+			cancelRemoveConfirmation();
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : 'Could not remove account.';
+		} finally {
+			removingUid = null;
+		}
+	}
 </script>
 
 <section class="mt-6 rounded-3xl border border-white/15 bg-white/10 p-5">
@@ -126,7 +167,7 @@
 			<p class="text-sm uppercase tracking-[0.2em] text-cyan-200">Account management</p>
 			<h3 class="mt-2 text-xl font-bold">Create users and manage access</h3>
 			<p class="mt-1 text-sm text-white/50">
-				Create login accounts, set temporary passwords, and suspend access when needed.
+				Create login accounts, set temporary passwords, suspend access, or remove accounts when needed.
 			</p>
 		</div>
 	</div>
@@ -151,31 +192,12 @@
 			</div>
 
 			<div class="mt-4 grid gap-3">
-				<input
-					class="min-h-11 rounded-2xl border border-white/15 bg-white/10 px-4 text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60"
-					type="text"
-					placeholder="Full name"
-					bind:value={name}
-				/>
-				<input
-					class="min-h-11 rounded-2xl border border-white/15 bg-white/10 px-4 text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60"
-					type="email"
-					placeholder="Email address"
-					bind:value={email}
-				/>
-				<input
-					class="min-h-11 rounded-2xl border border-white/15 bg-white/10 px-4 text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60"
-					type="password"
-					placeholder="Temporary password"
-					bind:value={password}
-				/>
+				<input class="min-h-11 rounded-2xl border border-white/15 bg-white/10 px-4 text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60" type="text" placeholder="Full name" bind:value={name} />
+				<input class="min-h-11 rounded-2xl border border-white/15 bg-white/10 px-4 text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60" type="email" placeholder="Email address" bind:value={email} />
+				<input class="min-h-11 rounded-2xl border border-white/15 bg-white/10 px-4 text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60" type="password" placeholder="Temporary password" bind:value={password} />
 			</div>
 
-			<button
-				type="submit"
-				disabled={creating}
-				class="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-300 to-purple-400 px-4 font-bold text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
-			>
+			<button type="submit" disabled={creating} class="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-300 to-purple-400 px-4 font-bold text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60">
 				<Check class="h-4 w-4" />
 				{creating ? 'Creating...' : 'Create user'}
 			</button>
@@ -188,29 +210,16 @@
 			</div>
 
 			<div class="mt-4 grid gap-3">
-				<select
-					class="min-h-11 rounded-2xl border border-white/15 bg-slate-950/70 px-4 text-white outline-none focus:border-cyan-300/60"
-					bind:value={selectedUid}
-				>
+				<select class="min-h-11 rounded-2xl border border-white/15 bg-slate-950/70 px-4 text-white outline-none focus:border-cyan-300/60" bind:value={selectedUid}>
 					<option value="">Select a user</option>
 					{#each userProfiles as profile (profile.uid)}
 						<option value={profile.uid}>{profile.name} — {profile.email}</option>
 					{/each}
 				</select>
-
-				<input
-					class="min-h-11 rounded-2xl border border-white/15 bg-white/10 px-4 text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60"
-					type="password"
-					placeholder="New password"
-					bind:value={newPassword}
-				/>
+				<input class="min-h-11 rounded-2xl border border-white/15 bg-white/10 px-4 text-white outline-none placeholder:text-white/35 focus:border-cyan-300/60" type="password" placeholder="New password" bind:value={newPassword} />
 			</div>
 
-			<button
-				type="submit"
-				disabled={!selectedUid || updatingUid === selectedUid}
-				class="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-purple-300/25 bg-purple-500/15 px-4 font-bold text-purple-100 transition hover:bg-purple-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-			>
+			<button type="submit" disabled={!selectedUid || updatingUid === selectedUid} class="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-purple-300/25 bg-purple-500/15 px-4 font-bold text-purple-100 transition hover:bg-purple-500/25 disabled:cursor-not-allowed disabled:opacity-60">
 				<KeyRound class="h-4 w-4" />
 				{updatingUid === selectedUid ? 'Updating...' : 'Update password'}
 			</button>
@@ -228,35 +237,56 @@
 				<p class="text-sm text-white/50">No regular users found yet.</p>
 			{:else}
 				{#each userProfiles as profile (profile.uid)}
-					<div class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-						<div>
-							<div class="flex flex-wrap items-center gap-2">
-								<p class="font-bold">{profile.name}</p>
-								{#if isSuspended(profile)}
-									<span class="rounded-full border border-red-300/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-100">Suspended</span>
-								{:else}
-									<span class="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100">Active</span>
-								{/if}
+					<div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+						<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<div>
+								<div class="flex flex-wrap items-center gap-2">
+									<p class="font-bold">{profile.name}</p>
+									{#if isSuspended(profile)}
+										<span class="rounded-full border border-red-300/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-100">Suspended</span>
+									{:else}
+										<span class="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100">Active</span>
+									{/if}
+								</div>
+								<p class="mt-1 text-xs text-white/45">{profile.email}</p>
 							</div>
-							<p class="mt-1 text-xs text-white/45">{profile.email}</p>
+
+							<div class="flex flex-col gap-2 sm:flex-row">
+								<button type="button" disabled={updatingUid === profile.uid} class={isSuspended(profile) ? 'rounded-2xl border border-emerald-300/25 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-100 transition hover:bg-emerald-500/20 disabled:opacity-60' : 'rounded-2xl border border-red-300/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-100 transition hover:bg-red-500/20 disabled:opacity-60'} onclick={() => handleAccessToggle(profile)}>
+									{#if updatingUid === profile.uid}
+										Updating...
+									{:else if isSuspended(profile)}
+										Restore access
+									{:else}
+										Suspend access
+									{/if}
+								</button>
+
+								<button type="button" class="rounded-2xl border border-orange-300/25 bg-orange-500/10 px-4 py-2 text-sm font-bold text-orange-100 transition hover:bg-orange-500/20" onclick={() => startRemoveConfirmation(profile)}>
+									<Trash2 class="mr-1 inline h-4 w-4" />
+									Delete
+								</button>
+							</div>
 						</div>
 
-						<button
-							type="button"
-							disabled={updatingUid === profile.uid}
-							class={isSuspended(profile)
-								? 'rounded-2xl border border-emerald-300/25 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-100 transition hover:bg-emerald-500/20 disabled:opacity-60'
-								: 'rounded-2xl border border-red-300/25 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-100 transition hover:bg-red-500/20 disabled:opacity-60'}
-							onclick={() => handleAccessToggle(profile)}
-						>
-							{#if updatingUid === profile.uid}
-								Updating...
-							{:else if isSuspended(profile)}
-								Restore access
-							{:else}
-								Suspend access
-							{/if}
-						</button>
+						{#if confirmUid === profile.uid}
+							<div class="mt-4 rounded-2xl border border-orange-300/25 bg-orange-500/10 p-4">
+								<p class="text-sm font-bold text-orange-100">Confirm account deletion</p>
+								<p class="mt-1 text-xs text-orange-50/70">
+									This removes the login account, profile record, assignments, and subtasks for this user. The activity log remains.
+								</p>
+								<p class="mt-3 text-xs text-orange-50/70">Type this email to confirm: <span class="font-bold text-orange-100">{profile.email}</span></p>
+								<input class="mt-3 min-h-11 w-full rounded-2xl border border-orange-300/25 bg-slate-950/40 px-4 text-white outline-none placeholder:text-white/35 focus:border-orange-200" type="text" placeholder="Type email exactly" bind:value={confirmText} />
+								<div class="mt-3 flex flex-col gap-2 sm:flex-row">
+									<button type="button" disabled={removingUid === profile.uid} class="rounded-2xl border border-orange-300/25 bg-orange-500/20 px-4 py-2 text-sm font-bold text-orange-100 transition hover:bg-orange-500/30 disabled:opacity-60" onclick={handleRemoveAccount}>
+										{removingUid === profile.uid ? 'Deleting...' : 'Confirm delete'}
+									</button>
+									<button type="button" class="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/15" onclick={cancelRemoveConfirmation}>
+										Cancel
+									</button>
+								</div>
+							</div>
+						{/if}
 					</div>
 				{/each}
 			{/if}
